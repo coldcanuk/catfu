@@ -43,6 +43,8 @@ Examples:
   export BRAVE_API_KEY='your-search-plan-token'
   catfu web "query" --country CA --json
   catfu web "query" --brave-api-key "$BRAVE_API_KEY" --kind news
+  catfu discover "golang concurrency" --json
+  catfu search "concurrency" --web --json
 
 Note: global flags alone do nothing — always pass a subcommand (web, doctor, …).`,
 		SilenceUsage:  true,
@@ -116,6 +118,7 @@ Note: global flags alone do nothing — always pass a subcommand (web, doctor, �
 		newCatalogueCmd(),
 		newSearchCmd(),
 		newWebCmd(),
+		newDiscoverCmd(),
 		newListCmd(),
 		newStatusCmd(),
 		newUpdateCmd(),

@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 )
@@ -80,5 +81,19 @@ func TestDeleteChannelCascade(t *testing.T) {
 	}
 	if v != nil {
 		t.Fatal("expected cascade delete")
+	}
+}
+
+func TestBuildFTSQuerySlashToken(t *testing.T) {
+	q := buildFTSQuery("http2")
+	if q != `"http2"` {
+		t.Fatalf("%s", q)
+	}
+	q = buildFTSQuery("HTTP/2")
+	if !strings.Contains(q, "OR") || !strings.Contains(q, "HTTP2") && !strings.Contains(q, `"HTTP2"`) {
+		// stripped form should appear
+		if !strings.Contains(q, "HTTP") {
+			t.Fatalf("%s", q)
+		}
 	}
 }

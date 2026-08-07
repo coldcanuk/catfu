@@ -13,6 +13,7 @@ Module: `github.com/coldcanuk/catfu`
 - Catalogue channel metadata via external **yt-dlp** (streaming JSON, polite sleeps)
 - Local full-text search (FTS5) with channel + date filters
 - Pluggable search backends (local catalogue + Brave Search plan: web / news / video)
+- **Brave × catalogue force multiplier**: `discover` finds channels to ingest; `search --web` merges local FTS with remote YouTube hits
 - CLI designed for humans **and** agents (`--json`, stable exit codes)
 - MCP server (`catfu mcp`) for tool-using agents
 - Pure-Go SQLite (`modernc.org/sqlite`) — easy cross-compile, no CGO
@@ -23,7 +24,7 @@ Module: `github.com/coldcanuk/catfu`
 |------------|--------|
 | Go 1.25+ | build only |
 | [yt-dlp](https://github.com/yt-dlp/yt-dlp) | **runtime**, must be on `PATH` (you install it) |
-| Brave **Search** plan API key | optional, for `catfu web` / MCP `web_search` (not Answers) |
+| Brave **Search** plan API key | optional, for `web`, `discover`, `search --web` (not Answers) |
 
 yt-dlp is **not** bundled. Its license (Unlicense) is compatible with GPLv3; catfu only invokes it as an external process.
 
@@ -35,6 +36,8 @@ yt-dlp is **not** bundled. Its license (Unlicense) is compatible with GPLv3; cat
 # example: install to ~/.local/bin (ensure that dir is on PATH)
 curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o ~/.local/bin/yt-dlp
 chmod a+rx ~/.local/bin/yt-dlp
+# distro apt packages are often too old (YouTube returns 0 videos)
+yt-dlp --version   # prefer 2025+ / 2026+
 ```
 
 ### 2. catfu (via `go install`)
@@ -171,6 +174,36 @@ catfu web "query" --json
 See [research/brave-api-notes.md](research/brave-api-notes.md) and
 [docs/adr/0007-brave-search-plan.md](docs/adr/0007-brave-search-plan.md).
 
+
+## Brave as a catalogue force multiplier
+
+Brave and the local catalogue used to be **separate** tools. They now form a pipeline:
+
+```text
+discover (Brave) ──► catalogue (yt-dlp) ──► search (local FTS)
+                         ▲
+search --web ────────────┘  (also pulls remote YouTube hits)
+```
+
+| Command | Role |
+|---------|------|
+| `catfu discover "topic"` | Brave video/web → extract YouTube channels & videos; mark already-catalogued |
+| `catfu catalogue @handle` | Own the metadata locally (yt-dlp) |
+| `catfu search "q"` | Fast offline FTS over what you own |
+| `catfu search "q" --web` | Local hits **plus** Brave YouTube videos not yet catalogued |
+| `catfu web "q" --kind video` | Pure Brave (no catalogue correlation) |
+
+Example agent loop:
+
+```bash
+catfu auth set   # once
+catfu discover "golang concurrency patterns" --json
+# pick handles/urls from channels[]
+catfu catalogue @golang --limit 100
+catfu search "goroutine" --json
+catfu search "context cancel" --web --json   # local + remote YouTube
+```
+
 ## Configuration
 
 Precedence: **flags > environment > config file > defaults**.
@@ -200,8 +233,10 @@ log_level: info
 | Command | Purpose |
 |---------|---------|
 | `catalogue <channel>` | Ingest channel metadata (`--full`, `--limit`) |
-| `search [query]` | Local FTS + `--channel` / `--after` / `--before` |
+| `search [query]` | Local FTS + `--channel` / dates; `--web` adds Brave YouTube |
 | `web` / `web-search` | Brave Search plan: `--kind web\|news\|video` |
+| `discover` | Brave → YouTube channel/video suggestions to catalogue |
+| `search --web` | Local FTS + Brave YouTube video supplement |
 | `list` / `catalogues` | List channels |
 | `status [channel]` | DB or channel status |
 | `update <channel>` | Refresh / incremental catalogue |

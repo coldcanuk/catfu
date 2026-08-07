@@ -96,6 +96,12 @@ func (s *Service) CatalogueChannelWithProgress(ctx context.Context, channelURL s
 	if err != nil {
 		return meta.ID, count, err
 	}
+	if count == 0 {
+		log.Warn("catalogue completed with 0 videos — often an outdated yt-dlp; install latest from github.com/yt-dlp/yt-dlp and re-run",
+			"channel_id", meta.ID, "title", meta.Title, "ytdlp_hint", "yt-dlp --version should be recent (2025+)")
+		return meta.ID, count, fmt.Errorf("0 videos catalogued for %s (%s): check yt-dlp version/PATH (catfu doctor); verify with: yt-dlp --flat-playlist --playlist-end 5 %q",
+			meta.Title, meta.ID, url)
+	}
 	log.Info("catalogue complete", "channel_id", meta.ID, "title", meta.Title, "videos", count)
 	return meta.ID, count, nil
 }

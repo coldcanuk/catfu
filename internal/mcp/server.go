@@ -9,6 +9,7 @@ import (
 
 	"github.com/coldcanuk/catfu/internal/backends"
 	"github.com/coldcanuk/catfu/internal/backends/brave"
+	"github.com/coldcanuk/catfu/internal/discover"
 	"github.com/coldcanuk/catfu/internal/catalogue"
 	"github.com/coldcanuk/catfu/internal/config"
 	localsearch "github.com/coldcanuk/catfu/internal/search"
@@ -86,17 +87,18 @@ func Run(ctx context.Context, opts Options) error {
 		Before    string `json:"before,omitempty" jsonschema:"YYYY-MM-DD"`
 		Limit     int    `json:"limit,omitempty"`
 		Offset    int    `json:"offset,omitempty"`
+		WithWeb   bool   `json:"with_web,omitempty" jsonschema:"also query Brave video for YouTube hits not in catalogue"`
 	}
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "search_catalogue",
-		Description: "Search the local YouTube metadata catalogue with FTS and date filters",
+		Description: "Search local YouTube catalogue (FTS). Set with_web to supplement with Brave YouTube video hits.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, args searchArgs) (*mcp.CallToolResult, any, error) {
 		sq := backends.SearchQuery{Query: args.Query, Limit: args.Limit, Offset: args.Offset}
 		if args.ChannelID != "" {
 			if ch, _ := st.GetChannel(ctx, args.ChannelID); ch != nil {
 				sq.ChannelID = ch.ID
 			} else {
-				sq.ChannelID = args.ChannelID
+				return nil, nil, fmt.Errorf("channel not in catalogue: %s", args.ChannelID)
 			}
 		}
 		if t, err := localsearch.ParseDate(args.After); err == nil {
@@ -106,7 +108,14 @@ func Run(ctx context.Context, opts Options) error {
 			sq.Before = t
 		}
 		cs := &localsearch.CatalogueSearcher{Store: st}
-		results, err := cs.Search(ctx, sq)
+		var results []backends.Result
+		var err error
+		if args.WithWeb {
+			h := &localsearch.Hybrid{Local: cs, Brave: &brave.Client{APIKey: opts.BraveAPIKey}}
+			results, err = h.Search(ctx, sq)
+		} else {
+			results, err = cs.Search(ctx, sq)
+		}
 		if err != nil {
 			return nil, nil, err
 		}
@@ -152,6 +161,28 @@ func Run(ctx context.Context, opts Options) error {
 		}
 		b, _ := json.Marshal(results)
 		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: string(b)}}}, results, nil
+	})
+
+	type discoverArgs struct {
+		Query   string `json:"query" jsonschema:"topic to find YouTube channels/videos for"`
+		Limit   int    `json:"limit,omitempty"`
+		Country string `json:"country,omitempty"`
+		Kind    string `json:"kind,omitempty" jsonschema:"video, web, or both"`
+	}
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "discover_youtube",
+		Description: "Use Brave Search to find YouTube channels/videos to catalogue (force multiplier). Marks which are already local.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, args discoverArgs) (*mcp.CallToolResult, any, error) {
+		svc := &discover.Service{
+			Brave: &brave.Client{APIKey: opts.BraveAPIKey},
+			Store: st,
+		}
+		rep, err := svc.Discover(ctx, args.Query, discover.Options{Limit: args.Limit, Country: args.Country, Kind: args.Kind})
+		if err != nil {
+			return nil, nil, err
+		}
+		b, _ := json.Marshal(rep)
+		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: string(b)}}}, rep, nil
 	})
 
 	type emptyArgs struct{}
