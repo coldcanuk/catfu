@@ -135,7 +135,11 @@ Signup / credits: [Brave Search API](https://brave.com/search/api/) and
 
 ```bash
 export BRAVE_API_KEY='your-search-plan-token'
+# Always include a subcommand — this alone does nothing useful:
+#   catfu --brave-api-key "$BRAVE_API_KEY"
 catfu web "golang concurrency" --country CA --json
+# or pass the flag with the command:
+catfu web "golang concurrency" --brave-api-key "$BRAVE_API_KEY" --json
 catfu web "ottawa" --kind news --freshness pw
 catfu web "system design interview" --kind video --limit 20
 ```

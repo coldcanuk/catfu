@@ -35,9 +35,24 @@ func NewRoot() *cobra.Command {
 		Long: `catfu catalogues YouTube channel metadata (no video download) into a local
 SQLite database with FTS5 search, optional Brave web search, and an MCP server.
 
-yt-dlp must be installed separately and available on PATH.`,
+yt-dlp must be installed separately and available on PATH.
+
+Examples:
+  catfu doctor --json
+  catfu catalogue @SomeChannel --limit 50
+  export BRAVE_API_KEY='your-search-plan-token'
+  catfu web "query" --country CA --json
+  catfu web "query" --brave-api-key "$BRAVE_API_KEY" --kind news
+
+Note: global flags alone do nothing — always pass a subcommand (web, doctor, …).`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		// Running `catfu --brave-api-key …` with no subcommand used to only dump help.
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return fmt.Errorf("missing command: try `catfu doctor`, `catfu web "query"`, or `catfu --help`
+" +
+				"  Brave key example: catfu web "golang" --brave-api-key "$BRAVE_API_KEY" --json")
+		},
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			v, err := config.InitViper(cfgFile)
 			if err != nil {
