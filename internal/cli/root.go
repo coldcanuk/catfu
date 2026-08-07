@@ -49,9 +49,7 @@ Note: global flags alone do nothing — always pass a subcommand (web, doctor, �
 		SilenceErrors: true,
 		// Running `catfu --brave-api-key …` with no subcommand used to only dump help.
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return fmt.Errorf("missing command: try `catfu doctor`, `catfu web "query"`, or `catfu --help`
-" +
-				"  Brave key example: catfu web "golang" --brave-api-key "$BRAVE_API_KEY" --json")
+			return fmt.Errorf("missing command: try `catfu doctor`, `catfu web \"query\"`, or `catfu --help`\n  Brave key example: catfu web \"golang\" --brave-api-key \"$BRAVE_API_KEY\" --json")
 		},
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			v, err := config.InitViper(cfgFile)
