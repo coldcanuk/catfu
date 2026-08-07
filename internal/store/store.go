@@ -75,10 +75,28 @@ ON CONFLICT(id) DO UPDATE SET
 }
 
 // UpsertVideo inserts or updates a video.
+// Always refreshes fetched_at (metadata pull time). Engagement/language fields
+// preserve prior values when the new extract omits them (flat playlist mode).
 func (s *Store) UpsertVideo(ctx context.Context, v Video) error {
+	fetched := v.FetchedAt
+	if fetched == "" {
+		fetched = time.Now().UTC().Format(time.RFC3339)
+	}
 	_, err := s.db.ExecContext(ctx, `
-INSERT INTO videos (id, channel_id, title, description, upload_date, duration, view_count, like_count, thumbnail_url, webpage_url, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%SZ','now'), strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+INSERT INTO videos (
+  id, channel_id, title, description, upload_date, duration,
+  view_count, like_count, comment_count,
+  thumbnail_url, webpage_url,
+  language, languages, has_subtitles, has_auto_captions, has_transcript,
+  fetched_at, created_at, updated_at
+)
+VALUES (
+  ?, ?, ?, ?, ?, ?,
+  ?, ?, ?,
+  ?, ?,
+  ?, ?, ?, ?, ?,
+  ?, strftime('%Y-%m-%dT%H:%M:%SZ','now'), strftime('%Y-%m-%dT%H:%M:%SZ','now')
+)
 ON CONFLICT(id) DO UPDATE SET
   channel_id=excluded.channel_id,
   title=excluded.title,
@@ -87,12 +105,22 @@ ON CONFLICT(id) DO UPDATE SET
   duration=COALESCE(excluded.duration, videos.duration),
   view_count=COALESCE(excluded.view_count, videos.view_count),
   like_count=COALESCE(excluded.like_count, videos.like_count),
+  comment_count=COALESCE(excluded.comment_count, videos.comment_count),
   thumbnail_url=COALESCE(NULLIF(excluded.thumbnail_url,''), videos.thumbnail_url),
   webpage_url=COALESCE(NULLIF(excluded.webpage_url,''), videos.webpage_url),
+  language=COALESCE(NULLIF(excluded.language,''), videos.language),
+  languages=COALESCE(NULLIF(excluded.languages,''), videos.languages),
+  has_subtitles=CASE WHEN excluded.has_subtitles != 0 THEN excluded.has_subtitles ELSE videos.has_subtitles END,
+  has_auto_captions=CASE WHEN excluded.has_auto_captions != 0 THEN excluded.has_auto_captions ELSE videos.has_auto_captions END,
+  has_transcript=CASE WHEN excluded.has_transcript != 0 THEN excluded.has_transcript ELSE videos.has_transcript END,
+  fetched_at=excluded.fetched_at,
   updated_at=strftime('%Y-%m-%dT%H:%M:%SZ','now')
 `, v.ID, v.ChannelID, v.Title, nullStr(v.Description), nullStr(v.UploadDate),
-		nullInt(v.Duration), nullInt64(v.ViewCount), nullInt64(v.LikeCount),
-		nullStr(v.ThumbnailURL), nullStr(v.WebpageURL))
+		nullInt(v.Duration), nullInt64(v.ViewCount), nullInt64(v.LikeCount), nullInt64(v.CommentCount),
+		nullStr(v.ThumbnailURL), nullStr(v.WebpageURL),
+		nullStr(v.Language), nullStr(v.Languages),
+		boolInt(v.HasSubtitles), boolInt(v.HasAutoCaptions), boolInt(v.HasTranscript),
+		fetched)
 	return err
 }
 
@@ -157,13 +185,19 @@ FROM channels ORDER BY title COLLATE NOCASE`)
 func (s *Store) GetVideo(ctx context.Context, id string) (*Video, error) {
 	row := s.db.QueryRowContext(ctx, `
 SELECT id, channel_id, title, COALESCE(description,''), COALESCE(upload_date,''),
-       COALESCE(duration,0), view_count, like_count, COALESCE(thumbnail_url,''),
-       COALESCE(webpage_url,''), created_at, updated_at
+       COALESCE(duration,0), view_count, like_count, comment_count,
+       COALESCE(thumbnail_url,''), COALESCE(webpage_url,''),
+       COALESCE(language,''), COALESCE(languages,''),
+       COALESCE(has_subtitles,0), COALESCE(has_auto_captions,0), COALESCE(has_transcript,0),
+       COALESCE(fetched_at,''), created_at, updated_at
 FROM videos WHERE id = ?`, id)
 	var v Video
-	var vc, lc sql.NullInt64
+	var vc, lc, cc sql.NullInt64
+	var hs, ha, ht int
 	err := row.Scan(&v.ID, &v.ChannelID, &v.Title, &v.Description, &v.UploadDate,
-		&v.Duration, &vc, &lc, &v.ThumbnailURL, &v.WebpageURL, &v.CreatedAt, &v.UpdatedAt)
+		&v.Duration, &vc, &lc, &cc, &v.ThumbnailURL, &v.WebpageURL,
+		&v.Language, &v.Languages, &hs, &ha, &ht,
+		&v.FetchedAt, &v.CreatedAt, &v.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -176,6 +210,12 @@ FROM videos WHERE id = ?`, id)
 	if lc.Valid {
 		v.LikeCount = &lc.Int64
 	}
+	if cc.Valid {
+		v.CommentCount = &cc.Int64
+	}
+	v.HasSubtitles = hs != 0
+	v.HasAutoCaptions = ha != 0
+	v.HasTranscript = ht != 0
 	return &v, nil
 }
 
@@ -242,8 +282,11 @@ func (s *Store) SearchVideos(ctx context.Context, p SearchParams) ([]Video, erro
 		match := buildFTSQuery(q)
 		rows, err = s.db.QueryContext(ctx, `
 SELECT v.id, v.channel_id, v.title, COALESCE(v.description,''), COALESCE(v.upload_date,''),
-       COALESCE(v.duration,0), v.view_count, v.like_count, COALESCE(v.thumbnail_url,''),
-       COALESCE(v.webpage_url,''), v.created_at, v.updated_at,
+       COALESCE(v.duration,0), v.view_count, v.like_count, v.comment_count,
+       COALESCE(v.thumbnail_url,''), COALESCE(v.webpage_url,''),
+       COALESCE(v.language,''), COALESCE(v.languages,''),
+       COALESCE(v.has_subtitles,0), COALESCE(v.has_auto_captions,0), COALESCE(v.has_transcript,0),
+       COALESCE(v.fetched_at,''), v.created_at, v.updated_at,
        bm25(videos_fts) AS score
 FROM videos_fts
 JOIN videos v ON v.rowid = videos_fts.rowid
@@ -257,8 +300,11 @@ LIMIT ? OFFSET ?
 	} else {
 		rows, err = s.db.QueryContext(ctx, `
 SELECT v.id, v.channel_id, v.title, COALESCE(v.description,''), COALESCE(v.upload_date,''),
-       COALESCE(v.duration,0), v.view_count, v.like_count, COALESCE(v.thumbnail_url,''),
-       COALESCE(v.webpage_url,''), v.created_at, v.updated_at,
+       COALESCE(v.duration,0), v.view_count, v.like_count, v.comment_count,
+       COALESCE(v.thumbnail_url,''), COALESCE(v.webpage_url,''),
+       COALESCE(v.language,''), COALESCE(v.languages,''),
+       COALESCE(v.has_subtitles,0), COALESCE(v.has_auto_captions,0), COALESCE(v.has_transcript,0),
+       COALESCE(v.fetched_at,''), v.created_at, v.updated_at,
        0 AS score
 FROM videos v
 WHERE (? = '' OR v.channel_id = ?)
@@ -279,10 +325,13 @@ func scanVideos(rows *sql.Rows) ([]Video, error) {
 	var out []Video
 	for rows.Next() {
 		var v Video
-		var vc, lc sql.NullInt64
+		var vc, lc, cc sql.NullInt64
+		var hs, ha, ht int
 		var score float64
 		if err := rows.Scan(&v.ID, &v.ChannelID, &v.Title, &v.Description, &v.UploadDate,
-			&v.Duration, &vc, &lc, &v.ThumbnailURL, &v.WebpageURL, &v.CreatedAt, &v.UpdatedAt, &score); err != nil {
+			&v.Duration, &vc, &lc, &cc, &v.ThumbnailURL, &v.WebpageURL,
+			&v.Language, &v.Languages, &hs, &ha, &ht,
+			&v.FetchedAt, &v.CreatedAt, &v.UpdatedAt, &score); err != nil {
 			return nil, err
 		}
 		if vc.Valid {
@@ -291,10 +340,23 @@ func scanVideos(rows *sql.Rows) ([]Video, error) {
 		if lc.Valid {
 			v.LikeCount = &lc.Int64
 		}
+		if cc.Valid {
+			v.CommentCount = &cc.Int64
+		}
+		v.HasSubtitles = hs != 0
+		v.HasAutoCaptions = ha != 0
+		v.HasTranscript = ht != 0
 		v.SearchScore = score
 		out = append(out, v)
 	}
 	return out, rows.Err()
+}
+
+func boolInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 func nullStr(s string) any {

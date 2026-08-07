@@ -97,3 +97,53 @@ func TestBuildFTSQuerySlashToken(t *testing.T) {
 		}
 	}
 }
+
+func TestFetchedAtAndTranscript(t *testing.T) {
+	ctx := context.Background()
+	s, err := Open(ctx, ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	if err := s.UpsertChannel(ctx, Channel{ID: "UCx", Title: "X"}); err != nil {
+		t.Fatal(err)
+	}
+	views := int64(100)
+	likes := int64(9)
+	v := Video{
+		ID: "vid1", ChannelID: "UCx", Title: "Hello",
+		ViewCount: &views, LikeCount: &likes,
+		Language: "en", Languages: `["en","fr"]`,
+		HasSubtitles: true, HasAutoCaptions: true, HasTranscript: true,
+	}
+	if err := s.UpsertVideo(ctx, v); err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.GetVideo(ctx, "vid1")
+	if err != nil || got == nil {
+		t.Fatalf("%v %+v", err, got)
+	}
+	if got.FetchedAt == "" {
+		t.Fatal("expected fetched_at")
+	}
+	if got.ViewCount == nil || *got.ViewCount != 100 {
+		t.Fatalf("views %+v", got.ViewCount)
+	}
+	if !got.HasTranscript || got.Languages != `["en","fr"]` {
+		t.Fatalf("%+v", got)
+	}
+	// re-upsert without engagement should preserve
+	if err := s.UpsertVideo(ctx, Video{ID: "vid1", ChannelID: "UCx", Title: "Hello updated"}); err != nil {
+		t.Fatal(err)
+	}
+	got, _ = s.GetVideo(ctx, "vid1")
+	if got.Title != "Hello updated" {
+		t.Fatalf("title %s", got.Title)
+	}
+	if got.ViewCount == nil || *got.ViewCount != 100 {
+		t.Fatalf("views should preserve, got %+v", got.ViewCount)
+	}
+	if !got.HasTranscript {
+		t.Fatal("transcript flag should preserve")
+	}
+}

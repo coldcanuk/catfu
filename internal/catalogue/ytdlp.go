@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"os/exec"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -240,38 +241,112 @@ func pickThumbnail(m map[string]any) string {
 	return ""
 }
 
-// MapEntry converts a yt-dlp entry into video fields + optional channel hints.
-func MapEntry(entry RawEntry, fallbackChannelID string) (videoID, title, desc, upload, thumb, pageURL, channelID, channelTitle string, duration int, viewCount, likeCount *int64) {
-	videoID = firstString(entry, "id")
-	title = firstString(entry, "title")
-	desc = firstString(entry, "description")
-	upload = normalizeUploadDate(firstString(entry, "upload_date", "release_date"))
-	if upload == "" {
-		// timestamp epoch?
-		if ts, ok := asInt64(entry["timestamp"]); ok && ts > 0 {
-			// leave empty — avoid wrong TZ without time import dependency here; catalogue will handle if needed
-		}
+// MappedVideo is structured metadata extracted from one yt-dlp JSON entry.
+type MappedVideo struct {
+	ID              string
+	Title           string
+	Description     string
+	UploadDate      string
+	ThumbnailURL    string
+	WebpageURL      string
+	ChannelID       string
+	ChannelTitle    string
+	Duration        int
+	ViewCount       *int64
+	LikeCount       *int64
+	CommentCount    *int64
+	Language        string
+	Languages       []string // caption/subtitle language codes
+	HasSubtitles    bool
+	HasAutoCaptions bool
+	HasTranscript   bool
+}
+
+// MapEntry converts a yt-dlp entry into structured video metadata.
+func MapEntry(entry RawEntry, fallbackChannelID string) MappedVideo {
+	var m MappedVideo
+	m.ID = firstString(entry, "id")
+	m.Title = firstString(entry, "title")
+	m.Description = firstString(entry, "description")
+	m.UploadDate = normalizeUploadDate(firstString(entry, "upload_date", "release_date"))
+	m.ThumbnailURL = pickThumbnail(entry)
+	m.WebpageURL = firstString(entry, "webpage_url", "url")
+	if m.WebpageURL == "" && m.ID != "" {
+		m.WebpageURL = "https://www.youtube.com/watch?v=" + m.ID
 	}
-	thumb = pickThumbnail(entry)
-	pageURL = firstString(entry, "webpage_url", "url")
-	if pageURL == "" && videoID != "" {
-		pageURL = "https://www.youtube.com/watch?v=" + videoID
+	m.ChannelID = firstString(entry, "channel_id", "playlist_channel_id")
+	if m.ChannelID == "" {
+		m.ChannelID = fallbackChannelID
 	}
-	channelID = firstString(entry, "channel_id", "playlist_channel_id")
-	if channelID == "" {
-		channelID = fallbackChannelID
-	}
-	channelTitle = firstString(entry, "channel", "playlist_channel", "playlist_title", "uploader")
+	m.ChannelTitle = firstString(entry, "channel", "playlist_channel", "playlist_title", "uploader")
 	if d, ok := asInt(entry["duration"]); ok {
-		duration = d
+		m.Duration = d
 	}
 	if v, ok := asInt64(entry["view_count"]); ok {
-		viewCount = &v
+		m.ViewCount = &v
 	}
 	if v, ok := asInt64(entry["like_count"]); ok {
-		likeCount = &v
+		m.LikeCount = &v
 	}
-	return
+	if v, ok := asInt64(entry["comment_count"]); ok {
+		m.CommentCount = &v
+	}
+	m.Language = firstString(entry, "language")
+	// Manual subtitles (human) vs automatic captions
+	manLangs := mapKeys(entry["subtitles"])
+	autoLangs := mapKeys(entry["automatic_captions"])
+	m.HasSubtitles = len(manLangs) > 0
+	m.HasAutoCaptions = len(autoLangs) > 0
+	m.HasTranscript = m.HasSubtitles || m.HasAutoCaptions
+	// Union of language codes (normalize en-orig → en)
+	seen := map[string]bool{}
+	var langs []string
+	for _, code := range append(append([]string{}, manLangs...), autoLangs...) {
+		code = normalizeLangCode(code)
+		if code == "" || seen[code] {
+			continue
+		}
+		seen[code] = true
+		langs = append(langs, code)
+	}
+	if m.Language != "" && !seen[m.Language] {
+		langs = append(langs, m.Language)
+	}
+	sort.Strings(langs)
+	m.Languages = langs
+	return m
+}
+
+func mapKeys(v any) []string {
+	m, ok := v.(map[string]any)
+	if !ok || len(m) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(m))
+	for k := range m {
+		if k != "" {
+			out = append(out, k)
+		}
+	}
+	return out
+}
+
+func normalizeLangCode(code string) string {
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return ""
+	}
+	// en-orig, en-US, en-j3Py… → base language when possible
+	if i := strings.IndexByte(code, '-'); i > 0 {
+		base := code[:i]
+		// keep region-style en-US as en-US if second part is 2 letters; drop garbage suffixes
+		rest := code[i+1:]
+		if len(rest) == 2 {
+			return strings.ToLower(base) + "-" + strings.ToUpper(rest)
+		}
+		return strings.ToLower(base)
+	}
+	return strings.ToLower(code)
 }
 
 func asInt(v any) (int, bool) {

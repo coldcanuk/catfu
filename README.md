@@ -11,6 +11,7 @@ Module: `github.com/coldcanuk/catfu`
 ## Features
 
 - Catalogue channel metadata via external **yt-dlp** (streaming JSON, polite sleeps)
+- Engagement + availability fields: views, likes, comments, languages, caption/transcript flags, `fetched_at` (use `--full`)
 - Local full-text search (FTS5) with channel + date filters
 - Pluggable search backends (local catalogue + Brave Search plan: web / news / video)
 - **Brave × catalogue force multiplier**: `discover` finds channels to ingest; `search --web` merges local FTS with remote YouTube hits
