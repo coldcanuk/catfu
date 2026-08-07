@@ -174,6 +174,7 @@ func mapHTTPError(res *http.Response, body []byte) error {
 	reset := res.Header.Get("X-RateLimit-Reset")
 	remaining := res.Header.Get("X-RateLimit-Remaining")
 	limit := res.Header.Get("X-RateLimit-Limit")
+	apiCode, apiDetail := parseBraveAPIError(body)
 	switch code {
 	case http.StatusTooManyRequests:
 		msg := "brave rate limited (429)"
@@ -187,10 +188,32 @@ func mapHTTPError(res *http.Response, body []byte) error {
 	case http.StatusUnauthorized, http.StatusForbidden, http.StatusPaymentRequired:
 		return fmt.Errorf("brave auth/plan failed (%d): check Search plan subscription token (BRAVE_API_KEY)", code)
 	case http.StatusUnprocessableEntity:
+		if apiCode == "SUBSCRIPTION_TOKEN_INVALID" || strings.Contains(strings.ToLower(apiDetail), "subscription token") {
+			return fmt.Errorf("brave subscription token invalid (422): use a Search plan key from https://api-dashboard.search.brave.com/ (not Answers); set BRAVE_API_KEY or --brave-api-key")
+		}
+		if apiDetail != "" {
+			return fmt.Errorf("brave rejected request (422 %s): %s", apiCode, apiDetail)
+		}
 		return fmt.Errorf("brave rejected request (422): %s", truncate(string(body), 240))
 	default:
+		if apiDetail != "" {
+			return fmt.Errorf("brave HTTP %d (%s): %s", code, apiCode, apiDetail)
+		}
 		return fmt.Errorf("brave HTTP %d: %s", code, truncate(string(body), 240))
 	}
+}
+
+func parseBraveAPIError(body []byte) (code, detail string) {
+	var wrap struct {
+		Error struct {
+			Code   string `json:"code"`
+			Detail string `json:"detail"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(body, &wrap); err != nil {
+		return "", ""
+	}
+	return wrap.Error.Code, wrap.Error.Detail
 }
 
 func decodeResults(kind backends.SearchKind, body []byte) ([]backends.Result, error) {

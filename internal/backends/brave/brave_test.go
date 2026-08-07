@@ -149,3 +149,16 @@ func TestMissingKey(t *testing.T) {
 		t.Fatal("expected error")
 	}
 }
+
+func TestInvalidSubscriptionToken(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte(`{"error":{"code":"SUBSCRIPTION_TOKEN_INVALID","detail":"The provided subscription token is invalid.","status":422},"type":"ErrorResponse"}`))
+	}))
+	defer srv.Close()
+	c := &Client{APIKey: "bad", BaseHost: srv.URL, HTTPClient: srv.Client()}
+	_, err := c.Search(context.Background(), backends.SearchQuery{Query: "x"})
+	if err == nil || !strings.Contains(err.Error(), "subscription token invalid") {
+		t.Fatalf("err=%v", err)
+	}
+}
