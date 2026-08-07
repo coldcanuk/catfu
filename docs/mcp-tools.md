@@ -16,7 +16,7 @@ Transport: **stdio** (JSON-RPC). Logs go to **stderr**.
 |------|-------------|------------|
 | `catalogue_channel` | Ingest channel metadata via yt-dlp | `channel_url`, optional `full`, `limit` |
 | `search_catalogue` | Local FTS + filters | `query`, `channel_id`, `after`, `before`, `limit`, `offset` |
-| `web_search` | Brave Search (BYOK) | `query`, `limit`, `offset` |
+| `web_search` | Brave Search plan (web/news/video) | `query`, `kind`, `limit`, `offset`, `country`, `freshness`, … |
 | `list_catalogues` | List stored channels | (none) |
 | `doctor` | Health / dependency report | (none) |
 

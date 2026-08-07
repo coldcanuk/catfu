@@ -12,7 +12,7 @@ Module: `github.com/coldcanuk/catfu`
 
 - Catalogue channel metadata via external **yt-dlp** (streaming JSON, polite sleeps)
 - Local full-text search (FTS5) with channel + date filters
-- Pluggable search backends (local catalogue + Brave Web Search)
+- Pluggable search backends (local catalogue + Brave Search plan: web / news / video)
 - CLI designed for humans **and** agents (`--json`, stable exit codes)
 - MCP server (`catfu mcp`) for tool-using agents
 - Pure-Go SQLite (`modernc.org/sqlite`) — easy cross-compile, no CGO
@@ -23,7 +23,7 @@ Module: `github.com/coldcanuk/catfu`
 |------------|--------|
 | Go 1.25+ | build only |
 | [yt-dlp](https://github.com/yt-dlp/yt-dlp) | **runtime**, must be on `PATH` (you install it) |
-| Brave Search API key | optional, for `catfu web` / `web_search` tool |
+| Brave **Search** plan API key | optional, for `catfu web` / MCP `web_search` (not Answers) |
 
 yt-dlp is **not** bundled. Its license (Unlicense) is compatible with GPLv3; catfu only invokes it as an external process.
 
@@ -118,6 +118,31 @@ catfu list
 Default database: `$XDG_DATA_HOME/catfu/catfu.db` or `~/.local/share/catfu/catfu.db`.  
 Override with `--db` / `CATFU_DB`.
 
+
+## Brave Search (optional BYOK)
+
+catfu talks to Brave with **one Search plan subscription token** sent as
+`X-Subscription-Token`.
+
+| Plan | Needed? |
+|------|---------|
+| **Search** | Yes — Web, News, Video (and more) under one key |
+| **Answers** | No — different product (AI answers); not used by catfu today |
+
+Signup / credits: [Brave Search API](https://brave.com/search/api/) and
+[dashboard](https://api-dashboard.search.brave.com/) (public pricing includes
+~$5 free monthly credits on Search).
+
+```bash
+export BRAVE_API_KEY='your-search-plan-token'
+catfu web "golang concurrency" --country CA --json
+catfu web "ottawa" --kind news --freshness pw
+catfu web "system design interview" --kind video --limit 20
+```
+
+See [research/brave-api-notes.md](research/brave-api-notes.md) and
+[docs/adr/0007-brave-search-plan.md](docs/adr/0007-brave-search-plan.md).
+
 ## Configuration
 
 Precedence: **flags > environment > config file > defaults**.
@@ -125,7 +150,7 @@ Precedence: **flags > environment > config file > defaults**.
 | Setting | Flag | Env | Config key |
 |---------|------|-----|------------|
 | Database path | `--db` | `CATFU_DB` | `db` |
-| Brave API key | `--brave-api-key` | `BRAVE_API_KEY` | `brave_api_key` |
+| Brave Search token | `--brave-api-key` | `BRAVE_API_KEY` | `brave_api_key` |
 | yt-dlp binary | `--ytdlp` | `CATFU_YTDLP` | `ytdlp` |
 | JSON output | `--json` | | |
 | Output format | `--format` | | `table`/`json`/`csv` |
@@ -135,7 +160,7 @@ Config file (optional): `$XDG_CONFIG_HOME/catfu/config.yaml`
 
 ```yaml
 db: /path/to/catfu.db
-brave_api_key: "…"   # prefer env in production
+brave_api_key: "…"   # Search plan token; prefer env in production
 ytdlp: yt-dlp
 log_level: info
 ```
@@ -148,7 +173,7 @@ log_level: info
 |---------|---------|
 | `catalogue <channel>` | Ingest channel metadata (`--full`, `--limit`) |
 | `search [query]` | Local FTS + `--channel` / `--after` / `--before` |
-| `web` / `web-search` | Brave web search |
+| `web` / `web-search` | Brave Search plan: `--kind web\|news\|video` |
 | `list` / `catalogues` | List channels |
 | `status [channel]` | DB or channel status |
 | `update <channel>` | Refresh / incremental catalogue |

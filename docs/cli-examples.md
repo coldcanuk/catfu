@@ -12,9 +12,11 @@ catfu catalogue https://www.youtube.com/@veritasium/videos --full
 catfu search "climate" --after 2024-01-01 --limit 20 --json
 catfu search --channel @CTVNews --limit 10
 
-# Web search (Brave BYOK)
-export BRAVE_API_KEY=…
+# Web search (Brave Search plan BYOK — not Answers)
+export BRAVE_API_KEY=…   # Search plan X-Subscription-Token
 catfu web "youtube channel analytics best practices" --json
+catfu web "ottawa election" --kind news --country CA --freshness pw
+catfu web "golang tutorial" --kind video --limit 15
 
 # Management
 catfu list
