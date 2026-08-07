@@ -1,0 +1,15 @@
+catfu
+Copyright (C) 2026 coldcanuk
+
+This program is free software under the GNU General Public License v3 or later.
+See the LICENSE file for the full license text.
+
+Third-party components (see go.mod for versions):
+- modernc.org/sqlite — BSD-3-Clause
+- github.com/spf13/cobra — Apache-2.0
+- github.com/spf13/viper — MIT
+- github.com/modelcontextprotocol/go-sdk — MIT
+- golang.org/x/* — BSD-3-Clause
+
+yt-dlp is an optional external runtime dependency (Unlicense) installed by the
+user; it is not distributed as part of catfu.

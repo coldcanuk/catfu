@@ -1,0 +1,42 @@
+    --flat-playlist                 Do not extract a playlist's URL result
+    --no-flat-playlist              Fully extract the videos of a playlist
+                                    are available: mp3, aac, mp4, mkv, sleep.
+    --dateafter DATE                Download only videos uploaded on or after
+    --download-archive FILE         Download only videos not listed in the
+    --no-download-archive           Do not use archive file (default)
+    --max-downloads NUMBER          Abort after downloading NUMBER files
+                                    the --download-archive option
+    --break-per-input               Alters --max-downloads, --break-on-existing,
+    --retry-sleep [TYPE:]EXPR       Time to sleep between retries in seconds
+                                    extractor) to apply the sleep to. EXPR can
+                                    used multiple times to set the sleep for the
+                                    different retry types, e.g. --retry-sleep
+                                    linear=1::2 --retry-sleep fragment:exp=1:20
+    --write-info-json               Write video metadata to a .info.json file
+    --no-write-info-json            Do not write video metadata (default)
+                                    video metadata when using --write-info-json,
+                                    --write-info-json, --write-description etc.
+                                    (created with the "--write-info-json"
+                                    print the log to stderr
+    --no-simulate                   Download the video even if printing/listing
+    -O, --print [WHEN:]TEMPLATE     Field name or output template to print to
+                                    print it, separated by a ":". Supported
+    --print-to-file [WHEN:]TEMPLATE FILE
+                                    that of --print. FILE uses the same syntax
+    -j, --dump-json                 Quiet, but print JSON information for each
+    -J, --dump-single-json          Quiet, but print JSON information for each
+                                    --force-download-archive)
+    --no-progress                   Do not print progress bar
+    --print-traffic                 Display sent and read HTTP traffic
+    --sleep-requests SECONDS        Number of seconds to sleep between requests
+    --sleep-interval SECONDS        Number of seconds to sleep before each
+                                    download. This is the minimum time to sleep
+                                    when used along with --max-sleep-interval
+                                    (Alias: --min-sleep-interval)
+    --max-sleep-interval SECONDS    Maximum number of seconds to sleep. Can only
+                                    be used along with --min-sleep-interval
+    --sleep-subtitles SECONDS       Number of seconds to sleep before each
+                                    --print/--output), "before_dl" (before each
+    --extractor-args IE_KEY:ARGS    Pass ARGS arguments to the IE_KEY extractor.
+    -t sleep                        --sleep-subtitles 5 --sleep-requests 0.75
+                                    --sleep-interval 10 --max-sleep-interval 20
