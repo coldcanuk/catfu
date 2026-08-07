@@ -140,6 +140,7 @@ make vet
 
 - [Code of Conduct](CODE_OF_CONDUCT.md) — be cool, be kind, seek greatness
 - [Contributing](CONTRIBUTING.md) — branch/PR workflow, review bar, and AI/agent norms
+- [Security policy](SECURITY.md) — how to report vulnerabilities (privately, please)
 
 ## License
 
