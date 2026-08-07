@@ -79,18 +79,15 @@ func GetBraveAPIKey() (string, Source, error) {
 }
 
 // DeleteBraveAPIKey removes the token from keyring and file store.
+// Keyring errors are ignored when the secret is simply absent or the backend
+// is unavailable (headless hosts); file removal errors still surface.
 func DeleteBraveAPIKey() error {
-	var first error
-	if err := keyring.Delete(serviceName, braveKeyAccount); err != nil && !errors.Is(err, keyring.ErrNotFound) {
-		// ignore missing; note other errors but still try file
-		first = err
-	}
+	// Best-effort keyring delete — missing or unavailable backend is fine.
+	_ = keyring.Delete(serviceName, braveKeyAccount)
 	if err := os.Remove(filePath()); err != nil && !os.IsNotExist(err) {
-		if first == nil {
-			first = err
-		}
+		return err
 	}
-	return first
+	return nil
 }
 
 // Status reports presence without returning the secret.
