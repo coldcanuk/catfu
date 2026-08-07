@@ -135,6 +135,12 @@ make vet
 3. `go test ./...` and `go vet ./...` must pass
 4. Do not vendor yt-dlp; do not commit secrets or local `*.db`
 
+
+## Community
+
+- [Code of Conduct](CODE_OF_CONDUCT.md) — be cool, be kind, seek greatness
+- [Contributing](CONTRIBUTING.md) — branch/PR workflow, review bar, and AI/agent norms
+
 ## License
 
 Copyright (C) 2026 coldcanuk  
