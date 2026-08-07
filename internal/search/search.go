@@ -51,17 +51,23 @@ func (c *CatalogueSearcher) Search(ctx context.Context, q backends.SearchQuery) 
 			url = "https://www.youtube.com/watch?v=" + v.ID
 		}
 		out = append(out, backends.Result{
-			ID:          v.ID,
-			Title:       v.Title,
-			URL:         url,
-			Description: v.Description,
-			ChannelID:   v.ChannelID,
-			Channel:     title,
-			UploadDate:  v.UploadDate,
-			Duration:    v.Duration,
-			Source:      "catalogue",
-			Kind:        "catalogue",
-			Score:       v.SearchScore,
+			ID:            v.ID,
+			Title:         v.Title,
+			URL:           url,
+			Description:   v.Description,
+			ChannelID:     v.ChannelID,
+			Channel:       title,
+			UploadDate:    v.UploadDate,
+			Duration:      v.Duration,
+			ViewCount:     v.ViewCount,
+			LikeCount:     v.LikeCount,
+			Language:      v.Language,
+			Languages:     v.Languages,
+			HasTranscript: v.HasTranscript,
+			FetchedAt:     v.FetchedAt,
+			Source:        "catalogue",
+			Kind:          "catalogue",
+			Score:         v.SearchScore,
 		})
 	}
 	return out, nil

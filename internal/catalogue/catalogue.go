@@ -3,6 +3,7 @@ package catalogue
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
@@ -64,31 +65,42 @@ func (s *Service) CatalogueChannelWithProgress(ctx context.Context, channelURL s
 	}
 	count = 0
 	_, err = s.YTDLP.StreamEntries(ctx, url, dump, func(entry RawEntry) error {
-		vid, title, desc, upload, thumb, page, chID, _, duration, views, likes := MapEntry(entry, meta.ID)
-		if vid == "" || title == "" {
+		m := MapEntry(entry, meta.ID)
+		if m.ID == "" || m.Title == "" {
 			return nil
 		}
-		if chID == "" {
-			chID = meta.ID
+		if m.ChannelID == "" {
+			m.ChannelID = meta.ID
+		}
+		langsJSON := ""
+		if len(m.Languages) > 0 {
+			b, _ := json.Marshal(m.Languages)
+			langsJSON = string(b)
 		}
 		v := store.Video{
-			ID:           vid,
-			ChannelID:    chID,
-			Title:        title,
-			Description:  desc,
-			UploadDate:   upload,
-			Duration:     duration,
-			ViewCount:    views,
-			LikeCount:    likes,
-			ThumbnailURL: thumb,
-			WebpageURL:   page,
+			ID:              m.ID,
+			ChannelID:       m.ChannelID,
+			Title:           m.Title,
+			Description:     m.Description,
+			UploadDate:      m.UploadDate,
+			Duration:        m.Duration,
+			ViewCount:       m.ViewCount,
+			LikeCount:       m.LikeCount,
+			CommentCount:    m.CommentCount,
+			ThumbnailURL:    m.ThumbnailURL,
+			WebpageURL:      m.WebpageURL,
+			Language:        m.Language,
+			Languages:       langsJSON,
+			HasSubtitles:    m.HasSubtitles,
+			HasAutoCaptions: m.HasAutoCaptions,
+			HasTranscript:   m.HasTranscript,
 		}
 		if err := s.Store.UpsertVideo(ctx, v); err != nil {
 			return err
 		}
 		count++
 		if opts.Progress != nil {
-			opts.Progress(count, vid, title)
+			opts.Progress(count, m.ID, m.Title)
 		}
 		return nil
 	})

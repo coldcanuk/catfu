@@ -57,7 +57,7 @@ func newCatalogueCmd() *cobra.Command {
 			})
 		},
 	}
-	cmd.Flags().BoolVar(&full, "full", false, "fetch full metadata (slower; includes upload dates/descriptions)")
+	cmd.Flags().BoolVar(&full, "full", false, "full metadata: views/likes/comments, languages, captions/transcript flags, descriptions (slower)")
 	cmd.Flags().IntVar(&limit, "limit", 0, "max videos to catalogue (0 = all)")
 	return cmd
 }

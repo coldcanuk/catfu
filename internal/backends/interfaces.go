@@ -56,6 +56,12 @@ type Result struct {
 	Channel     string  `json:"channel,omitempty"`
 	UploadDate  string  `json:"upload_date,omitempty"`
 	Duration    int     `json:"duration,omitempty"`
+	ViewCount   *int64  `json:"view_count,omitempty"`
+	LikeCount   *int64  `json:"like_count,omitempty"`
+	Language    string  `json:"language,omitempty"`
+	Languages   string  `json:"languages,omitempty"`
+	HasTranscript bool  `json:"has_transcript,omitempty"`
+	FetchedAt   string  `json:"fetched_at,omitempty"`
 	Source      string  `json:"source"`
 	Kind        string  `json:"kind,omitempty"` // web|news|video|catalogue
 	Age         string  `json:"age,omitempty"`
