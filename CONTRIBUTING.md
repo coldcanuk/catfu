@@ -4,6 +4,8 @@ Thanks for helping. Small, focused changes are welcome.
 
 ## Before you start
 
+Use the [issue templates](https://github.com/coldcanuk/catfu/issues/new/choose) when reporting bugs or requesting features.
+
 1. Read the [README](README.md) and [Code of Conduct](CODE_OF_CONDUCT.md).
 2. Search existing issues and PRs so you don’t duplicate work.
 3. For larger changes, open an issue first and sketch the approach.

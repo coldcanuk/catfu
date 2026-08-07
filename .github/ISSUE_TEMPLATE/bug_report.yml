@@ -1,0 +1,65 @@
+name: Bug report
+description: Something is broken or behaves unexpectedly
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. Please fill in what you can — incomplete reports are harder to fix.
+        Run `catfu doctor --json` if the problem might be environment-related.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One or two sentences describing the problem.
+      placeholder: e.g. search --json exits 1 on empty catalogue
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps, including commands and flags.
+      placeholder: |
+        1. catfu catalogue @example --limit 5
+        2. catfu search "foo" --json
+        3. …
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include error messages, exit codes, and relevant stderr/stdout (redact secrets).
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Paste `catfu doctor --json` output when possible (redact API keys — doctor already redacts).
+      placeholder: |
+        catfu version:
+        OS:
+        yt-dlp version:
+        go version (if built from source):
+      render: shell
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and did not find a duplicate
+          required: true
+        - label: I am not posting secrets (API keys, tokens, private URLs)
+          required: true
