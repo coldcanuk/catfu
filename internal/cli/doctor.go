@@ -65,10 +65,12 @@ func newDoctorCmd() *cobra.Command {
 			braveOK := app.Config.BraveAPIKey != ""
 			report["brave"] = map[string]any{
 				"api_key_set":   braveOK,
+				"api_key_source": app.Config.BraveAPIKeySource,
 				"plan":          "Search",
 				"header":        "X-Subscription-Token",
 				"endpoints":     []string{"web", "news", "video"},
 				"env":           []string{"BRAVE_API_KEY", "CATFU_BRAVE_API_KEY"},
+				"store":         "catfu auth set (OS keychain or 0600 secrets file)",
 				"note":          "Use a Search plan subscription token, not Answers",
 			}
 

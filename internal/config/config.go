@@ -1,4 +1,4 @@
-// Package config loads catfu configuration from flags, env, and file.
+// Package config loads catfu configuration from flags, env, file, and secrets store.
 package config
 
 import (
@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/coldcanuk/catfu/internal/secrets"
 	"github.com/spf13/viper"
 )
 
@@ -14,15 +15,17 @@ import (
 type Config struct {
 	DBPath      string  `mapstructure:"db"`
 	BraveAPIKey string  `mapstructure:"brave_api_key"` // Brave Search plan X-Subscription-Token
-	YTDLP       string  `mapstructure:"ytdlp"`
-	LogLevel    string  `mapstructure:"log_level"`
-	JSON        bool    `mapstructure:"json"`
-	Format      string  `mapstructure:"format"`
-	Quiet       bool    `mapstructure:"quiet"`
-	ConfigFile  string  `mapstructure:"config"`
-	SleepReq    float64 `mapstructure:"sleep_requests"`
-	SleepMin    float64 `mapstructure:"sleep_interval"`
-	SleepMax    float64 `mapstructure:"max_sleep_interval"`
+	// BraveAPIKeySource is where the key was resolved (flag|env|keyring|file|config).
+	BraveAPIKeySource string `mapstructure:"-"`
+	YTDLP             string  `mapstructure:"ytdlp"`
+	LogLevel          string  `mapstructure:"log_level"`
+	JSON              bool    `mapstructure:"json"`
+	Format            string  `mapstructure:"format"`
+	Quiet             bool    `mapstructure:"quiet"`
+	ConfigFile        string  `mapstructure:"config"`
+	SleepReq          float64 `mapstructure:"sleep_requests"`
+	SleepMin          float64 `mapstructure:"sleep_interval"`
+	SleepMax          float64 `mapstructure:"max_sleep_interval"`
 }
 
 // Defaults returns a Config with built-in defaults (paths resolved).
@@ -99,7 +102,15 @@ func InitViper(cfgFile string) (*viper.Viper, error) {
 	return v, nil
 }
 
-// Load merges viper into Config.
+// Load merges viper into Config, then fills Brave key from OS keychain / secrets file
+// when not already provided by flag, env, or config file.
+//
+// Precedence (highest first):
+//  1. --brave-api-key flag (already in viper when Load is called)
+//  2. BRAVE_API_KEY / CATFU_BRAVE_API_KEY env
+//  3. config.yaml brave_api_key
+//  4. OS keyring (preferred persistent store)
+//  5. ~/.config/catfu/secrets file (0600 fallback)
 func Load(v *viper.Viper) (Config, error) {
 	var c Config
 	if err := v.Unmarshal(&c); err != nil {
@@ -117,6 +128,27 @@ func Load(v *viper.Viper) (Config, error) {
 	if c.DBPath == "" {
 		c.DBPath = defaultDBPath()
 	}
+
+	// Resolve Brave key source for doctor/config output.
+	switch {
+	case v.IsSet("brave_api_key") && strings.TrimSpace(v.GetString("brave_api_key")) != "":
+		// Distinguishing flag vs env vs file is imperfect in viper; use env presence.
+		if os.Getenv("BRAVE_API_KEY") != "" || os.Getenv("CATFU_BRAVE_API_KEY") != "" {
+			// Flag overrides env only when PersistentFlags Changed — handled by caller Set.
+			c.BraveAPIKeySource = string(secrets.SourceEnv)
+		} else if v.InConfig("brave_api_key") {
+			c.BraveAPIKeySource = string(secrets.SourceConfig)
+		} else {
+			// Could be flag or default; if non-empty and not env/config, treat as flag/other.
+			c.BraveAPIKeySource = string(secrets.SourceFlag)
+		}
+		c.BraveAPIKey = strings.TrimSpace(v.GetString("brave_api_key"))
+	default:
+		if tok, src, err := secrets.GetBraveAPIKey(); err == nil {
+			c.BraveAPIKey = tok
+			c.BraveAPIKeySource = string(src)
+		}
+	}
 	return c, nil
 }
 
@@ -127,18 +159,19 @@ func (c Config) Redacted() map[string]any {
 		keyStatus = "***"
 	}
 	return map[string]any{
-		"db":                 c.DBPath,
-		"ytdlp":              c.YTDLP,
-		"log_level":          c.LogLevel,
-		"format":             c.Format,
-		"json":               c.JSON,
-		"quiet":              c.Quiet,
-		"brave_api_key":      keyStatus,
-		"brave_plan":         "Search",
-		"sleep_requests":     c.SleepReq,
-		"sleep_interval":     c.SleepMin,
-		"max_sleep_interval": c.SleepMax,
-		"config_file":        c.ConfigFile,
+		"db":                   c.DBPath,
+		"ytdlp":                c.YTDLP,
+		"log_level":            c.LogLevel,
+		"format":               c.Format,
+		"json":                 c.JSON,
+		"quiet":                c.Quiet,
+		"brave_api_key":        keyStatus,
+		"brave_api_key_source": c.BraveAPIKeySource,
+		"brave_plan":           "Search",
+		"sleep_requests":       c.SleepReq,
+		"sleep_interval":       c.SleepMin,
+		"max_sleep_interval":   c.SleepMax,
+		"config_file":          c.ConfigFile,
 	}
 }
 

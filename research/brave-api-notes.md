@@ -14,11 +14,12 @@ Pricing (2026 public): Search ≈ **$5 / 1 000 requests**, **$5 free monthly c
 
 Multiple dashboard keys are multiple tokens for the same product — catfu needs **one Search key**:
 
-| Source | Name |
-|--------|------|
-| Env | `BRAVE_API_KEY` or `CATFU_BRAVE_API_KEY` |
-| Flag | `--brave-api-key` |
-| Config | `brave_api_key` |
+| Source | Name | Notes |
+|--------|------|-------|
+| **Keychain / secrets file** | `catfu auth set` | Preferred for humans |
+| Env | `BRAVE_API_KEY` or `CATFU_BRAVE_API_KEY` | CI / agents |
+| Flag | `--brave-api-key` | One-off override |
+| Config | `brave_api_key` | Discouraged if file is shared/backed up naively |
 
 ## Auth
 
