@@ -115,16 +115,38 @@ func Run(ctx context.Context, opts Options) error {
 	})
 
 	type webArgs struct {
-		Query  string `json:"query" jsonschema:"web search query"`
-		Limit  int    `json:"limit,omitempty"`
-		Offset int    `json:"offset,omitempty"`
+		Query      string `json:"query" jsonschema:"search query"`
+		Kind       string `json:"kind,omitempty" jsonschema:"web, news, or video (default web)"`
+		Limit      int    `json:"limit,omitempty"`
+		Offset     int    `json:"offset,omitempty"`
+		Country    string `json:"country,omitempty" jsonschema:"ISO country code e.g. CA"`
+		SearchLang string `json:"search_lang,omitempty"`
+		SafeSearch string `json:"safesearch,omitempty" jsonschema:"off, moderate, or strict"`
+		Freshness  string `json:"freshness,omitempty" jsonschema:"pd, pw, pm, py, or date range"`
+		After      string `json:"after,omitempty" jsonschema:"YYYY-MM-DD freshness start"`
+		Before     string `json:"before,omitempty" jsonschema:"YYYY-MM-DD freshness end"`
 	}
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "web_search",
-		Description: "Search the web via Brave Search API (requires BRAVE_API_KEY)",
+		Description: "Brave Search plan API (web/news/video). Requires BRAVE_API_KEY Search subscription token.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, args webArgs) (*mcp.CallToolResult, any, error) {
 		client := &brave.Client{APIKey: opts.BraveAPIKey}
-		results, err := client.Search(ctx, backends.SearchQuery{Query: args.Query, Limit: args.Limit, Offset: args.Offset})
+		k := backends.SearchKind(args.Kind)
+		if k == "" {
+			k = backends.SearchKindWeb
+		}
+		sq := backends.SearchQuery{
+			Query: args.Query, Limit: args.Limit, Offset: args.Offset,
+			Kind: k, Country: args.Country, SearchLang: args.SearchLang,
+			SafeSearch: args.SafeSearch, Freshness: args.Freshness,
+		}
+		if t, err := localsearch.ParseDate(args.After); err == nil {
+			sq.After = t
+		}
+		if t, err := localsearch.ParseDate(args.Before); err == nil {
+			sq.Before = t
+		}
+		results, err := client.Search(ctx, sq)
 		if err != nil {
 			return nil, nil, err
 		}

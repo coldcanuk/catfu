@@ -21,8 +21,11 @@ func newBackendsCmd() *cobra.Command {
 				{
 					"name":        "brave",
 					"type":        "web",
-					"description": "Brave Search API",
+					"description": "Brave Search plan (web, news, video) via X-Subscription-Token",
 					"configured":  app.Config.BraveAPIKey != "",
+					"plan":        "Search (not Answers)",
+					"env":         "BRAVE_API_KEY",
+					"kinds":       []string{"web", "news", "video"},
 				},
 				{
 					"name":        "yt-dlp",
