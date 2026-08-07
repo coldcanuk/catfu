@@ -88,6 +88,10 @@ Note: global flags alone do nothing â€” always pass a subcommand (web, doctor, â
 				return err
 			}
 			cfg.ConfigFile = cfgFile
+			if f := cmd.Root().PersistentFlags().Lookup("brave-api-key"); f != nil && f.Changed {
+				cfg.BraveAPIKey = f.Value.String()
+				cfg.BraveAPIKeySource = "flag"
+			}
 			app.Viper = v
 			app.Config = cfg
 			app.Logger = newLogger(cfg)
@@ -121,6 +125,7 @@ Note: global flags alone do nothing â€” always pass a subcommand (web, doctor, â
 		newVersionCmd(),
 		newDoctorCmd(),
 		newConfigCmd(),
+		newAuthCmd(),
 		newCompletionCmd(),
 		newOpenCmd(),
 		newStatsCmd(),

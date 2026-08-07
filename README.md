@@ -133,15 +133,39 @@ Signup / credits: [Brave Search API](https://brave.com/search/api/) and
 [dashboard](https://api-dashboard.search.brave.com/) (public pricing includes
 ~$5 free monthly credits on Search).
 
+### Recommended: store the token once (`catfu auth`)
+
 ```bash
-export BRAVE_API_KEY='your-search-plan-token'
-# Always include a subcommand — this alone does nothing useful:
-#   catfu --brave-api-key "$BRAVE_API_KEY"
+# Interactive (hidden input) — uses OS keychain when available
+catfu auth set
+
+# Or pipe / flag (less preferred; may land in shell history)
+catfu auth set --token 'your-search-plan-token'
+echo 'your-search-plan-token' | catfu auth set
+
+catfu auth status   # never prints the secret
 catfu web "golang concurrency" --country CA --json
-# or pass the flag with the command:
-catfu web "golang concurrency" --brave-api-key "$BRAVE_API_KEY" --json
-catfu web "ottawa" --kind news --freshness pw
-catfu web "system design interview" --kind video --limit 20
+catfu auth clear    # remove from keychain / secrets file
+```
+
+**Storage backends**
+
+| Backend | When |
+|---------|------|
+| **OS keychain** | macOS Keychain, Windows Credential Manager, Linux Secret Service (GNOME Keyring / KWallet via libsecret) |
+| **0600 secrets file** | Fallback if no keychain: `$XDG_CONFIG_HOME/catfu/secrets` |
+
+### Precedence (highest first)
+
+1. `--brave-api-key` flag (good for one-off / scripts)
+2. `BRAVE_API_KEY` / `CATFU_BRAVE_API_KEY` env (good for CI/agents)
+3. `brave_api_key` in config.yaml (discouraged for shared machines)
+4. OS keychain / secrets file from `catfu auth set` (**best for daily use**)
+
+```bash
+# Agents / CI still work without keychain:
+export BRAVE_API_KEY='…'
+catfu web "query" --json
 ```
 
 See [research/brave-api-notes.md](research/brave-api-notes.md) and
