@@ -60,6 +60,7 @@ func (c *CatalogueSearcher) Search(ctx context.Context, q backends.SearchQuery) 
 			UploadDate:  v.UploadDate,
 			Duration:    v.Duration,
 			Source:      "catalogue",
+			Kind:        "catalogue",
 			Score:       v.SearchScore,
 		})
 	}
