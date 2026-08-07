@@ -38,3 +38,6 @@ All tools return JSON text content suitable for agents.
   }
 }
 ```
+
+| `discover_youtube` | Brave → YouTube channels/videos to catalogue | `query`, `limit`, `kind`, `country` |
+| `search_catalogue` | Local FTS; optional Brave with `with_web` | `query`, `channel_id`, `with_web`, … |

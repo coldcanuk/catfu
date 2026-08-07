@@ -30,3 +30,10 @@ catfu stats --json
 # MCP
 catfu mcp
 ```
+
+
+# Force multiplier: Brave → find channels → catalogue → local search
+catfu discover "golang concurrency" --json
+catfu catalogue @golang --limit 100
+catfu search "concurrency" --json
+catfu search "http2" --web --json

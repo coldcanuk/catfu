@@ -346,6 +346,8 @@ func normalizeDate(s string) string {
 // buildFTSQuery turns a user query into a safe FTS5 MATCH expression.
 func buildFTSQuery(q string) string {
 	// Quote tokens for phrase-ish matching; join with AND.
+	// For tokens containing punctuation (e.g. HTTP/2), also OR a stripped form
+	// so "http2" can match titles that use "HTTP/2".
 	parts := strings.Fields(q)
 	if len(parts) == 0 {
 		return `""`
@@ -356,7 +358,17 @@ func buildFTSQuery(q string) string {
 		if p == "" {
 			continue
 		}
-		out = append(out, `"`+p+`"`)
+		stripped := strings.Map(func(r rune) rune {
+			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+				return r
+			}
+			return -1
+		}, p)
+		if stripped != "" && stripped != p {
+			out = append(out, `("`+p+`" OR "`+stripped+`")`)
+		} else {
+			out = append(out, `"`+p+`"`)
+		}
 	}
 	if len(out) == 0 {
 		return `""`

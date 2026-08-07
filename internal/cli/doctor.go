@@ -36,6 +36,11 @@ func newDoctorCmd() *cobra.Command {
 				ytInfo["error"] = ytErr.Error()
 			} else if ver, err := yt.Version(ctx); err == nil {
 				ytInfo["version"] = ver
+				// crude staleness: year prefix before 2025 often fails on modern YouTube
+				if len(ver) >= 4 && ver[:4] < "2025" {
+					ytInfo["stale"] = true
+					ytInfo["stale_hint"] = "yt-dlp looks old; YouTube listings often return 0 videos. Install latest: curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o ~/.local/bin/yt-dlp && chmod a+rx ~/.local/bin/yt-dlp"
+				}
 			} else {
 				ytInfo["version_error"] = err.Error()
 			}
