@@ -29,16 +29,81 @@ yt-dlp is **not** bundled. Its license (Unlicense) is compatible with GPLv3; cat
 
 ## Install
 
+### 1. yt-dlp (runtime dependency)
+
 ```bash
-# yt-dlp (example)
+# example: install to ~/.local/bin (ensure that dir is on PATH)
 curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o ~/.local/bin/yt-dlp
 chmod a+rx ~/.local/bin/yt-dlp
+```
 
-# catfu
+### 2. catfu (via `go install`)
+
+Requires **Go 1.25+**.
+
+```bash
 go install github.com/coldcanuk/catfu/cmd/catfu@latest
-# or from source:
+```
+
+**Where the binary lands:** `go install` does **not** write into the Go toolchain
+dir (`/usr/local/go/bin`). It installs to:
+
+| Condition | Install location |
+|-----------|------------------|
+| `GOBIN` set | `$GOBIN/catfu` |
+| else (default) | `$GOPATH/bin/catfu` → usually **`~/go/bin/catfu`** |
+
+Check:
+
+```bash
+go env GOBIN GOPATH
+ls -la "$(go env GOPATH)/bin/catfu"
+# or, if GOBIN is set:
+# ls -la "$(go env GOBIN)/catfu"
+```
+
+### 3. Put `~/go/bin` on your `PATH` (if `which catfu` fails)
+
+If install succeeded but `catfu` is not found, your shell cannot see `$GOPATH/bin`.
+
+**bash** (`~/.bashrc`):
+
+```bash
+echo 'export PATH="$HOME/go/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+**zsh** (`~/.zshrc`):
+
+```bash
+echo 'export PATH="$HOME/go/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**Current shell only** (temporary):
+
+```bash
+export PATH="$HOME/go/bin:$PATH"
+```
+
+Verify:
+
+```bash
+which catfu
+catfu version
+catfu doctor --json
+```
+
+You should see a path like `/home/you/go/bin/catfu` and JSON version/doctor output.
+
+### 4. Or build from source
+
+```bash
 git clone https://github.com/coldcanuk/catfu.git
-cd catfu && make build && ./bin/catfu doctor
+cd catfu && make build
+./bin/catfu doctor
+# optional: install into ~/go/bin
+make install
 ```
 
 ## Quick start
