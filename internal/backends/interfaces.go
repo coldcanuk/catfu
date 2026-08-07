@@ -22,14 +22,28 @@ type Cataloguer interface {
 	CatalogueChannel(ctx context.Context, channelURL string, opts CatalogueOpts) error
 }
 
+// SearchKind selects a remote search vertical when supported.
+type SearchKind string
+
+const (
+	SearchKindWeb   SearchKind = "web"
+	SearchKindNews  SearchKind = "news"
+	SearchKindVideo SearchKind = "video"
+)
+
 // SearchQuery is the portable search request for local and web backends.
 type SearchQuery struct {
-	Query     string
-	ChannelID string
-	After     *time.Time
-	Before    *time.Time
-	Limit     int
-	Offset    int
+	Query      string
+	ChannelID  string
+	After      *time.Time
+	Before     *time.Time
+	Limit      int
+	Offset     int
+	Kind       SearchKind // web|news|video; empty => web for remote backends
+	Country    string     // ISO 3166-1 alpha-2
+	SearchLang string
+	SafeSearch string // off|moderate|strict
+	Freshness  string // pd|pw|pm|py or empty (use After/Before)
 }
 
 // Result is a normalised search hit.
@@ -43,6 +57,8 @@ type Result struct {
 	UploadDate  string  `json:"upload_date,omitempty"`
 	Duration    int     `json:"duration,omitempty"`
 	Source      string  `json:"source"`
+	Kind        string  `json:"kind,omitempty"` // web|news|video|catalogue
+	Age         string  `json:"age,omitempty"`
 	Score       float64 `json:"score,omitempty"`
 }
 

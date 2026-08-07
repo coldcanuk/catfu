@@ -13,7 +13,7 @@ import (
 // Config is the effective runtime configuration.
 type Config struct {
 	DBPath      string  `mapstructure:"db"`
-	BraveAPIKey string  `mapstructure:"brave_api_key"`
+	BraveAPIKey string  `mapstructure:"brave_api_key"` // Brave Search plan X-Subscription-Token
 	YTDLP       string  `mapstructure:"ytdlp"`
 	LogLevel    string  `mapstructure:"log_level"`
 	JSON        bool    `mapstructure:"json"`
@@ -134,6 +134,7 @@ func (c Config) Redacted() map[string]any {
 		"json":               c.JSON,
 		"quiet":              c.Quiet,
 		"brave_api_key":      keyStatus,
+		"brave_plan":         "Search",
 		"sleep_requests":     c.SleepReq,
 		"sleep_interval":     c.SleepMin,
 		"max_sleep_interval": c.SleepMax,

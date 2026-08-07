@@ -61,10 +61,15 @@ func newDoctorCmd() *cobra.Command {
 			}
 			report["database"] = dbInfo
 
-			// Brave
+			// Brave Search plan token (single product key for web/news/video)
 			braveOK := app.Config.BraveAPIKey != ""
-			report["brave_api_key"] = map[string]any{
-				"set": braveOK,
+			report["brave"] = map[string]any{
+				"api_key_set":   braveOK,
+				"plan":          "Search",
+				"header":        "X-Subscription-Token",
+				"endpoints":     []string{"web", "news", "video"},
+				"env":           []string{"BRAVE_API_KEY", "CATFU_BRAVE_API_KEY"},
+				"note":          "Use a Search plan subscription token, not Answers",
 			}
 
 			// write perms on data dir
@@ -84,7 +89,7 @@ func newDoctorCmd() *cobra.Command {
 				fmt.Fprintf(cmd.OutOrStdout(), "  go:       %s\n", runtime.Version())
 				fmt.Fprintf(cmd.OutOrStdout(), "  yt-dlp:   %v\n", ytInfo)
 				fmt.Fprintf(cmd.OutOrStdout(), "  database: %v\n", dbInfo)
-				fmt.Fprintf(cmd.OutOrStdout(), "  brave:    set=%v\n", braveOK)
+				fmt.Fprintf(cmd.OutOrStdout(), "  brave:    set=%v (Search plan key)\n", braveOK)
 				return nil
 			}
 			return output.New(formatFlag()).WriteValue(report)
