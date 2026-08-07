@@ -88,7 +88,7 @@ yt-dlp must be installed separately and available on PATH.`,
 	pf.Bool("json", false, "emit JSON on stdout (agent-friendly)")
 	pf.String("format", "table", "output format: table|json|csv")
 	pf.BoolP("quiet", "q", false, "reduce progress noise")
-	pf.String("brave-api-key", "", "Brave Search API key (env BRAVE_API_KEY)")
+	pf.String("brave-api-key", "", "Brave Search plan token (env BRAVE_API_KEY; not Answers)")
 	pf.String("ytdlp", "yt-dlp", "yt-dlp binary name or path")
 	pf.String("log-level", "info", "log level: debug|info|warn|error")
 	pf.Float64("sleep-requests", 0.5, "yt-dlp --sleep-requests seconds")
