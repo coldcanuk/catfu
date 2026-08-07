@@ -55,8 +55,8 @@ make vet
 
 ## Security
 
-Do not open public issues for sensitive security reports if that would increase risk.
-Prefer contacting the maintainers privately when possible.
+See [SECURITY.md](SECURITY.md). Do not open public issues with exploit details.
+Use private vulnerability reporting when available. Don’t be douchebags.
 
 ## License
 
