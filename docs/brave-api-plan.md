@@ -56,3 +56,19 @@ cycles first, then incremental delivery with tests, reduces rework.
 #### Milestone 4.2 — Audit, merge main, remove worktree
 
 Worktree: `wt/brave-api-v2`
+
+## Plan update (end of Phase 1 / Milestone 1.2)
+
+### Concrete decisions
+1. **Subscription:** Brave **Search** plan (not Answers). One product key.
+2. **Env:** keep `BRAVE_API_KEY` / `CATFU_BRAVE_API_KEY` / `brave_api_key` / `--brave-api-key`.
+3. **Endpoints:** web (default), news, video via `--kind` / MCP `kind`.
+4. **Fix:** remove manual `Accept-Encoding: gzip` (let Transport handle).
+5. **Params:** country, search_lang, safesearch, freshness shortcuts + date range.
+6. **Tests:** httptest for web/news/video decode paths and 401/429.
+7. **Docs:** README + research notes + doctor hint for Search plan.
+
+### Revised estimates
+- Client rewrite + tests: small–medium
+- CLI/MCP wiring: small
+- Docs: small
