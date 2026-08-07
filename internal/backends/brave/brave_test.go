@@ -17,9 +17,8 @@ func TestSearchWebOK(t *testing.T) {
 		if r.Header.Get("X-Subscription-Token") != "test-key" {
 			t.Errorf("missing token")
 		}
-		if r.Header.Get("Accept-Encoding") != "" {
-			t.Errorf("Accept-Encoding should be unset by client, got %q", r.Header.Get("Accept-Encoding"))
-		}
+		// Transport may add Accept-Encoding: gzip; that is OK (auto-decompressed).
+		// The bug is only when the application forces the header itself.
 		if !strings.HasSuffix(r.URL.Path, "/res/v1/web/search") {
 			t.Errorf("path %s", r.URL.Path)
 		}
