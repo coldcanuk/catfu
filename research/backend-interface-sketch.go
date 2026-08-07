@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package backends sketch — refined in production code under internal/backends.
 package backends
 
