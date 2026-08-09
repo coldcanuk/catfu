@@ -145,25 +145,25 @@ CLI resolve channel/video
 
 ### Milestone 2.1 — Types + platform registry
 
-- [ ] Task 2.1.1 — Create `platforms.go` with Platform constants and `AllPlatforms`
-- [ ] Task 2.1.2 — Create `Link` / `Confidence` types in `extract.go` (stubs ok)
+- [x] Task 2.1.1 — Create `platforms.go` with Platform constants and `AllPlatforms`
+- [x] Task 2.1.2 — Create `Link` / `Confidence` types in `extract.go` (stubs ok)
 
 **Commit:** `feat(social): add platform constants and link types`
 
 ### Milestone 2.2 — URL + labeled-handle extractors
 
-- [ ] Task 2.2.1 — Implement domain URL regexes for all 16 platforms
-- [ ] Task 2.2.2 — Implement keyword-labeled `@handle` patterns
-- [ ] Task 2.2.3 — Implement Nostr npub + Mastodon user@host (email denylist)
-- [ ] Task 2.2.4 — Normalize (strip @, trailing punct, query/hash), canonical URLs, Dedup
+- [x] Task 2.2.1 — Implement domain URL regexes for all 16 platforms
+- [x] Task 2.2.2 — Implement keyword-labeled `@handle` patterns
+- [x] Task 2.2.3 — Implement Nostr npub + Mastodon user@host (email denylist)
+- [x] Task 2.2.4 — Normalize (strip @, trailing punct, query/hash), canonical URLs, Dedup
 
 **Commit:** `feat(social): implement regex extractors and normalization`
 
 ### Milestone 2.3 — Unit tests
 
-- [ ] Task 2.3.1 — Table-driven tests: one high-confidence URL per platform
-- [ ] Task 2.3.2 — Labeled handles, trailing punctuation, false positives
-- [ ] Task 2.3.3 — Run: `go test ./internal/social/ -count=1 -v`
+- [x] Task 2.3.1 — Table-driven tests: one high-confidence URL per platform
+- [x] Task 2.3.2 — Labeled handles, trailing punctuation, false positives
+- [x] Task 2.3.3 — Run: `go test ./internal/social/ -count=1 -v`
 
 **Commit:** `test(social): table-driven extract coverage for all platforms`
 
@@ -173,23 +173,23 @@ CLI resolve channel/video
 
 ### Milestone 3.1 — Store helper
 
-- [ ] Task 3.1.1 — Add `ListVideosByChannel(ctx, channelID, limit)`  
+- [x] Task 3.1.1 — Add `ListVideosByChannel(ctx, channelID, limit)`  
   Snippet: query videos ordered by upload_date DESC with COALESCE(description,'')
 
 **Commit:** `feat(store): list videos by channel for socials scan`
 
 ### Milestone 3.2 — CLI command
 
-- [ ] Task 3.2.1 — `internal/cli/socials.go` with flags: `--video`, `--source`, `--platform`, `--unique`, `--limit`
-- [ ] Task 3.2.2 — Register in `root.go` `AddCommand`
-- [ ] Task 3.2.3 — Table + JSON output via `output` package
+- [x] Task 3.2.1 — `internal/cli/socials.go` with flags: `--video`, `--source`, `--platform`, `--unique`, `--limit`
+- [x] Task 3.2.2 — Register in `root.go` `AddCommand`
+- [x] Task 3.2.3 — Table + JSON output via `output` package
 
 **Commit:** `feat(cli): add catfu socials command with --json`
 
 ### Milestone 3.3 — Documentation
 
-- [ ] Task 3.3.1 — `docs/socials.md` usage + `--full` requirement
-- [ ] Task 3.3.2 — README feature bullet + command table row
+- [x] Task 3.3.1 — `docs/socials.md` usage + `--full` requirement
+- [x] Task 3.3.2 — README feature bullet + command table row
 
 **Commit:** `docs: document catfu socials extraction`
 
@@ -199,17 +199,17 @@ CLI resolve channel/video
 
 ### Milestone 4.1 — Full verification
 
-- [ ] Task 4.1.1 — `go test ./... && go vet ./... && make build`
-- [ ] Task 4.1.2 — Smoke: seed temp SQLite with synthetic descriptions, run `./bin/catfu socials --json`
+- [x] Task 4.1.1 — `go test ./... && go vet ./... && make build`
+- [x] Task 4.1.2 — Smoke: seed temp SQLite with synthetic descriptions, run `./bin/catfu socials --json`
 
 **Commit:** `test: socials CLI smoke fixtures (if any test helpers)` or skip if pure package tests suffice
 
 ### Milestone 4.2 — Ship
 
-- [ ] Task 4.2.1 — Push branch, open PR, merge to main
-- [ ] Task 4.2.2 — Delete feature worktree and local branch
-- [ ] Task 4.2.3 — Delete merged remote litter branches (`wt/*`)
-- [ ] Task 4.2.4 — Confirm only `main` remains locally and on origin
+- [x] Task 4.2.1 — Push branch, open PR, merge to main
+- [x] Task 4.2.2 — Delete feature worktree and local branch
+- [x] Task 4.2.3 — Delete merged remote litter branches (`wt/*`)
+- [x] Task 4.2.4 — Confirm only `main` remains locally and on origin
 
 **Final commit on branch before merge:** as needed  
 **Post-merge:** no extra commit unless conflict resolution

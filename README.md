@@ -18,6 +18,7 @@ Module: `github.com/coldcanuk/catfu`
 - CLI designed for humans **and** agents (`--json`, stable exit codes)
 - MCP server (`catfu mcp`) for tool-using agents
 - Pure-Go SQLite (`modernc.org/sqlite`) — easy cross-compile, no CGO
+- **Social link extraction** (`catfu socials`): regex scan of channel/video descriptions for X, Instagram, TikTok, GitHub, Telegram, …
 
 ## Requirements
 
@@ -266,9 +267,10 @@ internal/search    → local Searcher
 internal/backends  → interfaces + Brave client
 internal/mcp       → MCP stdio server
 internal/config    → Viper/XDG config
+internal/social    → regex social link extraction
 ```
 
-See [docs/PLAN.md](docs/PLAN.md), [docs/schema.md](docs/schema.md), [docs/mcp-tools.md](docs/mcp-tools.md), and [docs/adr/](docs/adr/).
+See [docs/PLAN.md](docs/PLAN.md), [docs/schema.md](docs/schema.md), [docs/mcp-tools.md](docs/mcp-tools.md), [docs/socials.md](docs/socials.md), and [docs/adr/](docs/adr/).
 
 ## Politeness / rate limits
 

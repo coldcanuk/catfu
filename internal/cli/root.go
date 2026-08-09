@@ -45,6 +45,7 @@ Examples:
   catfu web "query" --brave-api-key "$BRAVE_API_KEY" --kind news
   catfu discover "golang concurrency" --json
   catfu search "concurrency" --web --json
+  catfu socials @SomeChannel --json
 
 Note: global flags alone do nothing — always pass a subcommand (web, doctor, …).`,
 		SilenceUsage:  true,
@@ -132,6 +133,7 @@ Note: global flags alone do nothing — always pass a subcommand (web, doctor, �
 		newCompletionCmd(),
 		newOpenCmd(),
 		newStatsCmd(),
+		newSocialsCmd(),
 		newBackendsCmd(),
 		newMCPCmd(),
 	)
