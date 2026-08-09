@@ -104,6 +104,77 @@ var emailDomainDenylist = map[string]bool{
 	"email.com": true, "fastmail.com": true,
 }
 
+// Non-Mastodon hosts that use https://host/@user (or user@host) paths and must
+// never be classified as Mastodon. Federated instances stay allowed by default.
+// Keys are registrable hosts after strip of www./m. prefixes (see normalizeMastodonHost).
+var mastodonHostDenylist = map[string]bool{
+	// Major platforms that publish /@handle profile URLs
+	"youtube.com": true, "youtu.be": true,
+	"tiktok.com":  true, "vm.tiktok.com": true,
+	"threads.net": true,
+	"instagram.com": true, "instagr.am": true,
+	"facebook.com": true, "fb.com": true, "fb.me": true,
+	"twitter.com": true, "x.com": true,
+	"linkedin.com": true,
+	"github.com": true, "gitlab.com": true,
+	"medium.com": true, "reddit.com": true,
+	"pinterest.com": true, "twitch.tv": true,
+	"vimeo.com": true, "snapchat.com": true,
+	"discord.com": true, "discord.gg": true, "discordapp.com": true,
+	"t.me": true, "telegram.me": true, "telegram.dog": true,
+	"bsky.app": true,
+	"wa.me": true, "whatsapp.com": true, "api.whatsapp.com": true, "chat.whatsapp.com": true,
+	"line.me": true, "lin.ee": true,
+	// Common non-profile noise hosts
+	"linktr.ee": true, "linktree.com": true, "beacons.ai": true,
+	"bit.ly": true, "t.co": true, "goo.gl": true,
+}
+
+// normalizeMastodonHost lowercases and strips common mobile/www prefixes so
+// denylist keys stay registrable hosts (youtube.com, not www.youtube.com).
+func normalizeMastodonHost(host string) string {
+	host = strings.ToLower(strings.TrimSpace(host))
+	for {
+		switch {
+		case strings.HasPrefix(host, "www."):
+			host = host[4:]
+		case strings.HasPrefix(host, "m."):
+			host = host[2:]
+		case strings.HasPrefix(host, "mobile."):
+			host = host[7:]
+		default:
+			return host
+		}
+	}
+}
+
+// rejectMastodonHost reports hosts that must not be treated as Mastodon instances.
+func rejectMastodonHost(host string) bool {
+	h := normalizeMastodonHost(host)
+	if h == "" {
+		return true
+	}
+	if emailDomainDenylist[h] {
+		return true
+	}
+	if mastodonHostDenylist[h] {
+		return true
+	}
+	// Reject multi-label hosts ending in denylisted suffix
+	// (e.g. music.youtube.com).
+	for d := range mastodonHostDenylist {
+		if h == d || strings.HasSuffix(h, "."+d) {
+			return true
+		}
+	}
+	for d := range emailDomainDenylist {
+		if h == d || strings.HasSuffix(h, "."+d) {
+			return true
+		}
+	}
+	return false
+}
+
 // Extract finds social links/handles in text. Order is match order; use Dedup to merge.
 func Extract(text string) []Link {
 	if strings.TrimSpace(text) == "" {
@@ -475,9 +546,9 @@ func findNostr(text string) []Link {
 func findMastodon(text string) []Link {
 	var out []Link
 	for _, m := range reMastodonURL.FindAllStringSubmatch(text, -1) {
-		host := strings.ToLower(m[1])
+		host := normalizeMastodonHost(m[1])
 		user := m[2]
-		if emailDomainDenylist[host] {
+		if rejectMastodonHost(host) {
 			continue
 		}
 		handle := user + "@" + host
@@ -491,11 +562,10 @@ func findMastodon(text string) []Link {
 	}
 	for _, m := range reMastodonAcct.FindAllStringSubmatch(text, -1) {
 		user := m[1]
-		host := strings.ToLower(m[2])
-		if emailDomainDenylist[host] {
+		host := normalizeMastodonHost(m[2])
+		if rejectMastodonHost(host) {
 			continue
 		}
-		// skip if host looks like a normal email (no further heuristic)
 		handle := user + "@" + host
 		out = append(out, Link{
 			Platform:   PlatformMastodon,

@@ -247,3 +247,74 @@ func containsFold(list []string, want string) bool {
 	}
 	return false
 }
+
+// Platforms that use https://host/@user must not be classified as Mastodon.
+// Regression: channel bios often list youtube.com/@me and tiktok.com/@me; the
+// greedy mastodon URL regex used to emit false "mastodon" rows alongside the
+// correct TikTok/Threads extracts.
+func TestExtract_MastodonRejectsOtherAtPathHosts(t *testing.T) {
+	text := strings.Join([]string{
+		"https://www.youtube.com/@ChannelHandle",
+		"https://youtube.com/@ChannelHandle",
+		"https://www.tiktok.com/@real_tiktok",
+		"https://www.threads.net/@thread_user",
+		"https://instagram.com/@not_a_profile",
+		"https://mastodon.social/@real_masto",
+		"https://fosstodon.org/@foss_dev",
+		"https://github.com/acme-org",
+		"https://t.me/acme_channel",
+	}, "\n")
+	links := Dedup(Extract(text))
+	var mastodon []Link
+	for _, l := range links {
+		if l.Platform == PlatformMastodon {
+			mastodon = append(mastodon, l)
+			h := strings.ToLower(l.Handle)
+			u := strings.ToLower(l.URL)
+			for _, bad := range []string{
+				"youtube.com", "tiktok.com", "threads.net", "instagram.com",
+				"github.com", "t.me",
+			} {
+				if strings.Contains(h, bad) || strings.Contains(u, bad) {
+					t.Errorf("mastodon false positive for %s: %+v", bad, l)
+				}
+			}
+		}
+	}
+	var sawSocial, sawFoss bool
+	for _, l := range mastodon {
+		if strings.Contains(strings.ToLower(l.Handle), "mastodon.social") {
+			sawSocial = true
+		}
+		if strings.Contains(strings.ToLower(l.Handle), "fosstodon.org") {
+			sawFoss = true
+		}
+	}
+	if !sawSocial || !sawFoss {
+		t.Fatalf("expected real mastodon instances; got %+v", mastodon)
+	}
+	var sawTT bool
+	for _, l := range links {
+		if l.Platform == PlatformTikTok && strings.EqualFold(l.Handle, "real_tiktok") {
+			sawTT = true
+		}
+	}
+	if !sawTT {
+		t.Fatalf("expected tiktok handle real_tiktok in %+v", links)
+	}
+}
+
+func TestNormalizeMastodonHost(t *testing.T) {
+	if normalizeMastodonHost("www.youtube.com") != "youtube.com" {
+		t.Fatal(normalizeMastodonHost("www.youtube.com"))
+	}
+	if normalizeMastodonHost("m.youtube.com") != "youtube.com" {
+		t.Fatal(normalizeMastodonHost("m.youtube.com"))
+	}
+	if !rejectMastodonHost("www.tiktok.com") || !rejectMastodonHost("music.youtube.com") {
+		t.Fatal("expected platform hosts rejected")
+	}
+	if rejectMastodonHost("mastodon.social") || rejectMastodonHost("fosstodon.org") {
+		t.Fatal("expected real instances allowed")
+	}
+}
