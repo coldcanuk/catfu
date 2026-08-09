@@ -147,3 +147,34 @@ func TestFetchedAtAndTranscript(t *testing.T) {
 		t.Fatal("transcript flag should preserve")
 	}
 }
+
+
+func TestListVideosByChannel(t *testing.T) {
+	ctx := context.Background()
+	s, err := Open(ctx, ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	if err := s.UpsertChannel(ctx, Channel{ID: "UCch", Title: "Ch"}); err != nil {
+		t.Fatal(err)
+	}
+	for _, v := range []Video{
+		{ID: "v1", ChannelID: "UCch", Title: "v1", Description: "https://x.com/demo1", UploadDate: "2026-01-02"},
+		{ID: "v2", ChannelID: "UCch", Title: "v2", Description: "https://x.com/demo2", UploadDate: "2026-01-01"},
+	} {
+		if err := s.UpsertVideo(ctx, v); err != nil {
+			t.Fatal(err)
+		}
+	}
+	vids, err := s.ListVideosByChannel(ctx, "UCch", 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(vids) != 2 {
+		t.Fatalf("got %d videos", len(vids))
+	}
+	if vids[0].ID != "v1" {
+		t.Fatalf("expected newest first, got %s", vids[0].ID)
+	}
+}

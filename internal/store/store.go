@@ -260,6 +260,33 @@ func (s *Store) Stats(ctx context.Context) (Stats, error) {
 	return st, err
 }
 
+
+// ListVideosByChannel returns videos for a channel (newest upload first).
+// limit <= 0 defaults to 10000. Descriptions may be empty when catalogued without --full.
+func (s *Store) ListVideosByChannel(ctx context.Context, channelID string, limit int) ([]Video, error) {
+	if limit <= 0 {
+		limit = 10000
+	}
+	rows, err := s.db.QueryContext(ctx, `
+SELECT v.id, v.channel_id, v.title, COALESCE(v.description,''), COALESCE(v.upload_date,''),
+       COALESCE(v.duration,0), v.view_count, v.like_count, v.comment_count,
+       COALESCE(v.thumbnail_url,''), COALESCE(v.webpage_url,''),
+       COALESCE(v.language,''), COALESCE(v.languages,''),
+       COALESCE(v.has_subtitles,0), COALESCE(v.has_auto_captions,0), COALESCE(v.has_transcript,0),
+       COALESCE(v.fetched_at,''), v.created_at, v.updated_at,
+       0 AS score
+FROM videos v
+WHERE v.channel_id = ?
+ORDER BY v.upload_date DESC, v.updated_at DESC
+LIMIT ?
+`, channelID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanVideos(rows)
+}
+
 // SearchVideos runs FTS and/or filters with pagination.
 func (s *Store) SearchVideos(ctx context.Context, p SearchParams) ([]Video, error) {
 	if p.Limit <= 0 {
