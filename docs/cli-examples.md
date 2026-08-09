@@ -18,6 +18,10 @@ catfu web "youtube channel analytics best practices" --json
 catfu web "ottawa election" --kind news --country CA --freshness pw
 catfu web "golang tutorial" --kind video --limit 15
 
+# Social links from descriptions (prefer catalogue --full first)
+catfu socials @CTVNews --json
+catfu socials --video dQw4w9WgXcQ --platform x,instagram,telegram
+
 # Management
 catfu list
 catfu status @CTVNews

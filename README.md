@@ -3,7 +3,7 @@
 **catfu** is an open-source YouTube **channel metadata catalogue** (no video download).
 It stores titles, descriptions, dates, and related fields in a local **SQLite + FTS5**
 database, exposes an agent-friendly **CLI** (JSON everywhere), optional **Brave Search**,
-and a **stdio MCP server**.
+a **stdio MCP server**, and **regex social-link extraction** from descriptions.
 
 License: **GNU GPLv3**.  
 Module: `github.com/coldcanuk/catfu`
@@ -18,7 +18,7 @@ Module: `github.com/coldcanuk/catfu`
 - CLI designed for humans **and** agents (`--json`, stable exit codes)
 - MCP server (`catfu mcp`) for tool-using agents
 - Pure-Go SQLite (`modernc.org/sqlite`) — easy cross-compile, no CGO
-- **Social link extraction** (`catfu socials`): regex scan of channel/video descriptions for X, Instagram, TikTok, GitHub, Telegram, …
+- **Social link extraction** (`catfu socials`): regex scan of channel/video descriptions for X, Threads, Facebook, Instagram, Bluesky, Nostr, TikTok, LinkedIn, Mastodon, Discord, GitHub, GitLab, Telegram, WeChat, WhatsApp, LINE (see [docs/socials.md](docs/socials.md); prefer `catalogue --full` for descriptions)
 
 ## Requirements
 
@@ -116,8 +116,10 @@ make install
 ```bash
 catfu doctor --json
 catfu catalogue @CTVNews --limit 100
+catfu catalogue @CTVNews --full --limit 50   # richer metadata + descriptions
 catfu search "referendum" --json
 catfu list
+catfu socials @CTVNews --json                 # needs descriptions (prefer --full)
 ```
 
 Default database: `$XDG_DATA_HOME/catfu/catfu.db` or `~/.local/share/catfu/catfu.db`.  
@@ -213,10 +215,11 @@ Precedence: **flags > environment > config file > defaults**.
 | Setting | Flag | Env | Config key |
 |---------|------|-----|------------|
 | Database path | `--db` | `CATFU_DB` | `db` |
-| Brave Search token | `--brave-api-key` | `BRAVE_API_KEY` | `brave_api_key` |
+| Brave Search token | `--brave-api-key` | `BRAVE_API_KEY` / `CATFU_BRAVE_API_KEY` | `brave_api_key` |
 | yt-dlp binary | `--ytdlp` | `CATFU_YTDLP` | `ytdlp` |
 | JSON output | `--json` | | |
 | Output format | `--format` | | `table`/`json`/`csv` |
+| Log level | `--log-level` | | `log_level` |
 | Politeness sleeps | `--sleep-requests`, `--sleep-interval`, `--max-sleep-interval` | | |
 
 Config file (optional): `$XDG_CONFIG_HOME/catfu/config.yaml`
@@ -234,43 +237,52 @@ log_level: info
 
 | Command | Purpose |
 |---------|---------|
-| `catalogue <channel>` | Ingest channel metadata (`--full`, `--limit`) |
-| `search [query]` | Local FTS + `--channel` / dates; `--web` adds Brave YouTube |
-| `web` / `web-search` | Brave Search plan: `--kind web\|news\|video` |
-| `discover` | Brave → YouTube channel/video suggestions to catalogue |
-| `search --web` | Local FTS + Brave YouTube video supplement |
-| `list` / `catalogues` | List channels |
-| `status [channel]` | DB or channel status |
-| `update <channel>` | Refresh / incremental catalogue |
-| `info <id>` | Channel or video details |
-| `delete <channel>` | Remove channel (`--force`) |
-| `export` | Export results JSON/CSV |
-| `version` | Version |
-| `doctor` | Dependency & DB health |
-| `config` | Effective config (redacted) |
-| `completion` | Shell completions |
-| `open <video-id>` | Open in browser |
-| `stats` | Counts |
-| `backends` | Backend list/status |
-| `mcp` | Stdio MCP server |
+| `catalogue <channel>` | Ingest channel metadata via yt-dlp (`--full`, `--limit`) |
+| `update <channel>` | Incremental refresh of a catalogued channel |
+| `search [query]` | Local FTS + `--channel` / date filters; `--web` adds Brave YouTube |
+| `web` / `web-search` | Brave Search plan: `--kind` `web` / `news` / `video` |
+| `discover <topic>` | Brave → YouTube channel/video suggestions to catalogue |
+| `socials [channel]` | Extract social links/handles from descriptions (`--video`, `--platform`, `--json`) |
+| `list` / `catalogues` | List catalogued channels |
+| `status [channel]` | Database or channel catalogue status |
+| `info <channel|video-id>` | Channel or video details |
+| `delete <channel>` | Remove channel and its videos (`--force`) |
+| `export` | Export search results or catalogue as JSON/CSV |
+| `open <video-id>` | Open a video in the default browser |
+| `stats` | High-level channel/video counts |
+| `backends` | Search/catalogue backend list and status |
+| `auth` | Manage stored Brave Search token (`set` / `status` / `clear`) |
+| `config` | Effective config (secrets redacted) |
+| `doctor` | Dependencies, DB accessibility, credentials |
+| `mcp` | Stdio MCP server for tool-using agents |
+| `completion` | Shell completions (bash/zsh/fish/powershell) |
+| `version` | Print catfu version |
 
-Global: `--json`, `--format`, `--db`, `--quiet`, `--config`, sleep flags.
+**Global flags:** `--json`, `--format` (`table` / `json` / `csv`), `--db`, `--config`, `--quiet`, `--log-level`, `--brave-api-key`, `--ytdlp`, `--sleep-requests`, `--sleep-interval`, `--max-sleep-interval`.
+
+More examples: [docs/cli-examples.md](docs/cli-examples.md), [docs/socials.md](docs/socials.md).
 
 ## Architecture
 
 ```
-cmd/catfu          → CLI entry
-internal/cli       → Cobra commands
-internal/catalogue → yt-dlp wrapper + orchestration
-internal/store     → SQLite schema, FTS, CRUD
-internal/search    → local Searcher
-internal/backends  → interfaces + Brave client
-internal/mcp       → MCP stdio server
-internal/config    → Viper/XDG config
-internal/social    → regex social link extraction
+cmd/catfu           → CLI entry
+internal/cli        → Cobra commands
+internal/catalogue  → yt-dlp wrapper + orchestration
+internal/store      → SQLite schema, FTS, CRUD
+internal/search     → local Searcher (+ hybrid with Brave)
+internal/backends   → search interfaces + Brave client
+internal/discover   → Brave → YouTube channel/video discovery
+internal/social     → regex social link/handle extraction
+internal/mcp        → MCP stdio server
+internal/config     → Viper/XDG config
+internal/secrets    → OS keychain / secrets-file credential store
+internal/output     → table / JSON / CSV encoding
+internal/youtube    → URL/handle normalization helpers
+pkg/version         → build-time version string
 ```
 
-See [docs/PLAN.md](docs/PLAN.md), [docs/schema.md](docs/schema.md), [docs/mcp-tools.md](docs/mcp-tools.md), [docs/socials.md](docs/socials.md), and [docs/adr/](docs/adr/).
+See [docs/PLAN.md](docs/PLAN.md), [docs/schema.md](docs/schema.md), [docs/mcp-tools.md](docs/mcp-tools.md),
+[docs/socials.md](docs/socials.md), [docs/cli-examples.md](docs/cli-examples.md), and [docs/adr/](docs/adr/).
 
 ## Politeness / rate limits
 
