@@ -16,7 +16,7 @@ descriptions for social media profiles using **regular expressions** only
 | `nostr` | `npub1…` |
 | `tiktok` | `tiktok.com/@`, `TikTok: @user` |
 | `linkedin` | `linkedin.com/in/`, `linkedin.com/company/` |
-| `mastodon` | `https://host/@user`, `user@host` (email domains excluded) |
+| `mastodon` | `https://host/@user`, `user@host` (email + non-fediverse hosts excluded; YouTube/TikTok/Threads `/@` paths are not Mastodon) |
 | `discord` | `discord.gg/`, `discord.com/invite/` |
 | `github` | `github.com/user` (non-profile paths denylisted) |
 | `gitlab` | `gitlab.com/user` |
